@@ -60,6 +60,7 @@ export default function AdminDashboard({ user, paragraphs }) {
       if (filter === 'voted') return agg && agg.voted > 0;
       if (filter === 'notes') return agg && agg.notes.length > 0;
       if (filter === 'conflict') return p.item_type === 'conflict';
+      if (filter === 'term') return p.item_type === 'term';
       return true;
     });
   }, [paragraphs, byPara, filter]);
@@ -100,6 +101,7 @@ export default function AdminDashboard({ user, paragraphs }) {
             ['voted', 'With votes 有投票'],
             ['notes', 'With notes 有備註'],
             ['conflict', 'Conflict 衝突項'],
+            ['term', 'Terms 詞彙項'],
           ].map(([f, label]) => (
             <button
               key={f}
@@ -136,12 +138,16 @@ export default function AdminDashboard({ user, paragraphs }) {
           const agg = byPara[p.id];
           const counts = agg?.counts ?? { YES: 0, NO: 0, A: 0, B: 0, REJECT_BOTH: 0 };
           const isConflict = p.item_type === 'conflict';
+          const isTerm = p.item_type === 'term';
           return (
             <article key={p.id} className="card card-admin">
               <header className="card-head">
-                <span className="card-para">¶ {p.source_index ?? 'new'}</span>
+                <span className="card-para">
+                  {isTerm ? 'Document-wide' : `¶ ${p.source_index ?? 'new'}`}
+                </span>
                 <span className="card-section">{p.section}</span>
                 {isConflict && <span className="badge-conflict">Conflict</span>}
+                {isTerm && <span className="badge-term">Term ×{p.change_count}</span>}
                 <span className="admin-counts">
                   {isConflict ? (
                     <>A: {counts.A} · B: {counts.B} · Reject: {counts.REJECT_BOTH}</>
@@ -152,9 +158,17 @@ export default function AdminDashboard({ user, paragraphs }) {
                 </span>
               </header>
               <div
-                className="paragraph-text"
+                className={isTerm ? 'term-swap' : 'paragraph-text'}
                 dangerouslySetInnerHTML={{ __html: p.rendered_html }}
               />
+              {isTerm && (
+                <div className="term-admin-meta">
+                  {p.variants.count} occurrences · reviewers: {p.variants.reviewers.join(', ')} ·
+                  paragraphs: {p.variants.paragraphs.slice(0, 15).join(', ')}
+                  {p.variants.paragraphs.length > 15 &&
+                    ` … +${p.variants.paragraphs.length - 15} more`}
+                </div>
+              )}
               {isConflict &&
                 p.variants.map((v) => (
                   <div key={v.option} className="variant">

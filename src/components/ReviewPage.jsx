@@ -33,6 +33,10 @@ export default function ReviewPage({ user, paragraphs, votes, signedOffAt, onSig
   }
 
   const voteLabel = { YES: 'Yes 同意', NO: 'No 不同意', A: 'Option A 版本A', B: 'Option B 版本B', REJECT_BOTH: 'Reject both 皆不採用' };
+  const itemLabel = (p) =>
+    p.item_type === 'term'
+      ? `詞彙 ${p.variants.del} → ${p.variants.ins}`
+      : `¶ ${p.source_index ?? 'new'}`;
 
   return (
     <div className="page">
@@ -92,7 +96,7 @@ export default function ReviewPage({ user, paragraphs, votes, signedOffAt, onSig
             <ul className="review-list">
               {pending.slice(0, 100).map(({ p, i }) => (
                 <li key={p.id}>
-                  <span className="card-num">#{i + 1}</span> ¶ {p.source_index ?? 'new'} —{' '}
+                  <span className="card-num">#{i + 1}</span> {itemLabel(p)} —{' '}
                   {p.section}
                 </li>
               ))}
@@ -106,7 +110,7 @@ export default function ReviewPage({ user, paragraphs, votes, signedOffAt, onSig
           <ul className="review-list">
             {voted.map(({ p, v, i }) => (
               <li key={p.id}>
-                <span className="card-num">#{i + 1}</span> ¶ {p.source_index ?? 'new'} —{' '}
+                <span className="card-num">#{i + 1}</span> {itemLabel(p)} —{' '}
                 <strong>{voteLabel[v.vote] ?? v.vote}</strong>
                 {v.notes && <span className="review-notes"> 「{v.notes}」</span>}
               </li>

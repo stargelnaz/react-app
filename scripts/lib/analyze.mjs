@@ -158,6 +158,13 @@ export const normalize = (s) => s.replace(/[\s ]+/g, '');
 export const snippet = (s, n = 60) => (s.length > n ? `${s.slice(0, n)}…` : s);
 export const REVIEWABLE = new Set(['insertion', 'replacement', 'move-in']);
 
+// Owner decision 2026-08-10: changes touching ONLY punctuation/symbols/spacing
+// are applied silently and never voted on. A change that includes any real
+// wording stays reviewable.
+const PUNCT_ONLY_RE = /^[\s\p{P}\p{S}]+$/u;
+const isPunctText = (s) => s !== undefined && s !== '' && PUNCT_ONLY_RE.test(s);
+export const isReviewable = (ch) => REVIEWABLE.has(ch.type) && !ch.punctOnly;
+
 function classifyChanges(paragraph, docInsertedTexts) {
   const seq = [];
   let changeIdx = 0;
@@ -224,6 +231,8 @@ function classifyChanges(paragraph, docInsertedTexts) {
       const norm = normalize(ch.delText);
       if (norm.length >= 4 && docInsertedTexts.has(norm)) ch.type = 'likely-move';
     }
+    const texts = [ch.insText, ch.delText].filter((t) => t !== undefined && t !== '');
+    ch.punctOnly = texts.length > 0 && texts.every(isPunctText);
   }
   return logical;
 }
@@ -435,6 +444,7 @@ export function analyze(docDir, { log = () => {} } = {}) {
       explicit_moves: 0,
       new_paragraphs: 0,
       merged_paragraph_marks: 0,
+      punct_only_hidden: 0,
       comments: ed.doc.comments.size,
       unmatched_paragraphs: ed.unmatched,
       touched_source_paragraphs: 0,
@@ -505,6 +515,7 @@ export function analyze(docDir, { log = () => {} } = {}) {
           stats.min_paragraph = Math.min(stats.min_paragraph ?? Infinity, ch.sourceKey);
           stats.max_paragraph = Math.max(stats.max_paragraph ?? -1, ch.sourceKey);
         }
+        if (REVIEWABLE.has(ch.type) && ch.punctOnly) stats.punct_only_hidden += 1;
         if (ch.type === 'insertion') stats.insertions += 1;
         else if (ch.type === 'replacement') stats.replacements += 1;
         else if (ch.type === 'move-in' || ch.type === 'move-out') stats.explicit_moves += 1;
@@ -628,7 +639,7 @@ export function analyze(docDir, { log = () => {} } = {}) {
   let invisibleComments = 0;
   for (const [, b] of bySource) {
     const hasReviewable = [...b.perEditor.values()].some(({ logical }) =>
-      logical.some((ch) => REVIEWABLE.has(ch.type))
+      logical.some(isReviewable)
     );
     if (hasReviewable) affected += 1;
     else if (b.comments.length > 0) {

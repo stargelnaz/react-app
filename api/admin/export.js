@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   const [paragraphs, votes] = await Promise.all([
     select(
       'paragraphs',
-      'select=id,source_index,sort_order,item_type,change_count,section&order=sort_order.asc'
+      'select=id,source_index,sort_order,item_type,change_count,section,variants&order=sort_order.asc'
     ),
     select('stakeholder_votes', 'select=paragraph_id,vote,notes,users(name,is_test)'),
   ]);
@@ -43,7 +43,10 @@ export default async function handler(req, res) {
       .map((v) => `${v.users.name}: ${v.notes}`)
       .join(' | ');
     return {
-      paragraph: p.source_index ?? `(new, order ${p.sort_order})`,
+      paragraph:
+        p.item_type === 'term'
+          ? `TERM: ${p.variants.del} → ${p.variants.ins} (${p.variants.count}x)`
+          : p.source_index ?? `(new, order ${p.sort_order})`,
       section: p.section,
       type: p.item_type,
       changes: p.change_count,

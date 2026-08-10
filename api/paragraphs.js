@@ -30,15 +30,22 @@ export default async function handler(req, res) {
   }
   const voteByPara = Object.fromEntries(myVotes.map((v) => [v.paragraph_id, v]));
 
-  // Anonymization: the `section` column and conflict `variants` carry reviewer
-  // names. Stakeholders get no section concept at all — they review the whole
-  // document as one sequence — and variants stripped of attribution. Admin
-  // gets real names.
-  let sectionLabel = (s) => s;
-  let variantView = (v) => v;
-  if (user.role === 'stakeholder') {
-    sectionLabel = () => null;
-    variantView = (v) => ({ option: v.option, html: v.html });
+  // Anonymization: the `section` column, conflict `variants`, and term-card
+  // reviewer lists carry reviewer names. Stakeholders get no section concept
+  // at all — they review the whole document as one sequence — and variants
+  // stripped of attribution. Admin gets real names.
+  const isStakeholder = user.role === 'stakeholder';
+  const sectionLabel = isStakeholder ? () => null : (s) => s;
+  function variantView(p) {
+    if (!p.variants) return null;
+    if (p.item_type === 'term') {
+      if (!isStakeholder) return p.variants;
+      const { reviewers, ...rest } = p.variants;
+      return rest;
+    }
+    return isStakeholder
+      ? p.variants.map((v) => ({ option: v.option, html: v.html }))
+      : p.variants;
   }
 
   res.json({
@@ -46,7 +53,7 @@ export default async function handler(req, res) {
     paragraphs: paragraphs.map((p) => ({
       ...p,
       section: sectionLabel(p.section),
-      variants: p.variants ? p.variants.map(variantView) : null,
+      variants: variantView(p),
       comments: commentsByPara[p.id] ?? [],
       myVote: voteByPara[p.id]?.vote ?? null,
       myNotes: voteByPara[p.id]?.notes ?? '',

@@ -48,14 +48,18 @@ function ParagraphCard({ paragraph, initialVote, initialNotes, locked, onSaved, 
   }
 
   const isConflict = paragraph.item_type === 'conflict';
+  const isTerm = paragraph.item_type === 'term';
+  const term = isTerm ? paragraph.variants : null;
+  const hasCovered = !isTerm && paragraph.rendered_html.includes('chg-covered');
 
   return (
     <article className={`card ${vote ? 'card-voted' : ''}`} id={`p-${paragraph.id}`}>
       <header className="card-head">
         <span className="card-num">#{index + 1}</span>
-        <span className="card-para">¶ {paragraph.source_index ?? 'new'}</span>
+        <span className="card-para">{isTerm ? 'Document-wide 全文' : `¶ ${paragraph.source_index ?? 'new'}`}</span>
         {paragraph.section && <span className="card-section">{paragraph.section}</span>}
         {isConflict && <span className="badge-conflict">Conflict 衝突項</span>}
+        {isTerm && <span className="badge-term">Term change 詞彙修改</span>}
         <span className={`save-status save-${status}`}>
           {status === 'saving' && 'Saving…'}
           {status === 'saved' && 'Saved ✓'}
@@ -67,7 +71,29 @@ function ParagraphCard({ paragraph, initialVote, initialNotes, locked, onSaved, 
         </span>
       </header>
 
-      {isConflict ? (
+      {isTerm ? (
+        <>
+          <p className="conflict-intro">
+            The same wording change appears {term.count} times throughout the document. One vote
+            here applies to every occurrence.
+            <span lang="zh-TW">此詞彙修改在全文件中出現 {term.count} 次，一次投票適用於所有出現處。</span>
+          </p>
+          <div className="term-swap" dangerouslySetInnerHTML={{ __html: paragraph.rendered_html }} />
+          {term.examples?.length > 0 && (
+            <div className="term-examples">
+              <div className="variant-label">
+                Examples 範例 ({term.examples.length} of {term.count}):
+              </div>
+              {term.examples.map((ex, i) => (
+                <div key={i} className="term-example">
+                  {ex.para !== null && <span className="term-example-para">¶ {ex.para}</span>}
+                  <span dangerouslySetInnerHTML={{ __html: ex.html }} />
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : isConflict ? (
         <>
           <p className="conflict-intro">
             Two reviewers changed the same text differently. Choose one option, or reject both.
@@ -90,10 +116,19 @@ function ParagraphCard({ paragraph, initialVote, initialNotes, locked, onSaved, 
           ))}
         </>
       ) : (
-        <div
-          className="paragraph-text"
-          dangerouslySetInnerHTML={{ __html: paragraph.rendered_html }}
-        />
+        <>
+          <div
+            className="paragraph-text"
+            dangerouslySetInnerHTML={{ __html: paragraph.rendered_html }}
+          />
+          {hasCovered && (
+            <p className="covered-note">
+              Dotted highlights are document-wide term changes voted at the top — they are not part
+              of this vote.
+              <span lang="zh-TW">虛線標示為全文詞彙修改，已於頁首單獨投票，不屬於本段投票範圍。</span>
+            </p>
+          )}
+        </>
       )}
 
       {paragraph.comments.length > 0 && (

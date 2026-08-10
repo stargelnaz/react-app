@@ -54,13 +54,22 @@ r = await call('../api/me.js', { query: { t: testUser.token } });
 check('me: identifies test user', r.statusCode === 200 && r.body.name === testUser.name && r.body.role === 'stakeholder');
 
 // 3. paragraphs
+const dbParaCount = (await select('paragraphs', 'select=id')).length;
 r = await call('../api/paragraphs.js', { query: { t: testUser.token } });
 const paras = r.body?.paragraphs ?? [];
-check('paragraphs: returns 808', paras.length === 808, `got ${paras.length}`);
+check(`paragraphs: returns all ${dbParaCount}`, paras.length === dbParaCount, `got ${paras.length}`);
 const conflict = paras.find((p) => p.item_type === 'conflict');
 check('paragraphs: conflict card present with 2 variants', conflict && conflict.variants?.length === 2);
 const withComments = paras.filter((p) => p.comments.length > 0).length;
 check('paragraphs: comments attached', withComments > 0, `${withComments} paragraphs have comments`);
+const terms = paras.filter((p) => p.item_type === 'term');
+check('paragraphs: term cards present and sorted first', terms.length > 0 && paras[0].item_type === 'term', `${terms.length} term cards`);
+const term = terms[0];
+check(
+  'paragraphs: term variants anonymized for stakeholder',
+  term && term.variants.del && term.variants.examples?.length > 0 && term.variants.reviewers === undefined,
+  JSON.stringify({ ...term?.variants, examples: term?.variants?.examples?.length })
+);
 
 // 4. vote on standard paragraph
 const std = paras.find((p) => p.item_type === 'standard');
@@ -75,6 +84,12 @@ check('vote: A rejected on standard', r.statusCode === 400);
 r = await call('../api/vote.js', { method: 'POST', body: { t: testUser.token, paragraphId: conflict.id, vote: 'A', notes: '' } });
 check('vote: A accepted on conflict', r.statusCode === 200);
 
+// 6b. term card votes YES/NO, rejects A
+r = await call('../api/vote.js', { method: 'POST', body: { t: testUser.token, paragraphId: term.id, vote: 'YES', notes: '' } });
+check('vote: YES accepted on term card', r.statusCode === 200);
+r = await call('../api/vote.js', { method: 'POST', body: { t: testUser.token, paragraphId: term.id, vote: 'A' } });
+check('vote: A rejected on term card', r.statusCode === 400);
+
 // 7. upsert (change vote, ensure single row)
 r = await call('../api/vote.js', { method: 'POST', body: { t: testUser.token, paragraphId: std.id, vote: 'NO', notes: 'changed my mind 改了' } });
 const voteRows = await select('stakeholder_votes', `select=vote&paragraph_id=eq.${std.id}`);
@@ -84,7 +99,8 @@ check('vote: upsert keeps one row per user', r.statusCode === 200 && voteRows.le
 r = await call('../api/admin/results.js', { query: { t: admin.token } });
 const agg = r.body?.by_paragraph?.[std.id];
 check('admin results: test user votes excluded', r.statusCode === 200 && agg === undefined, agg ? JSON.stringify(agg) : 'no aggregate for test-voted paragraph');
-check('admin results: roster excludes test user', r.body.stakeholder_count === 4, `count ${r.body?.stakeholder_count}`);
+const realStakeholders = (await select('users', 'select=id&role=eq.stakeholder&is_test=eq.false')).length;
+check('admin results: roster excludes test user', r.body.stakeholder_count === realStakeholders, `count ${r.body?.stakeholder_count}, expected ${realStakeholders}`);
 
 // 9. admin endpoints reject stakeholder token
 r = await call('../api/admin/results.js', { query: { t: testUser.token } });
@@ -92,7 +108,8 @@ check('admin results: stakeholder rejected', r.statusCode === 403);
 
 // 10. export csv
 r = await call('../api/admin/export.js', { query: { t: admin.token, format: 'csv' } });
-check('export: csv produced', r.statusCode === 200 && typeof r.body === 'string' && r.body.split('\n').length === 809, `lines ${typeof r.body === 'string' ? r.body.split('\n').length : 'n/a'}`);
+check('export: csv produced', r.statusCode === 200 && typeof r.body === 'string' && r.body.split('\n').length === dbParaCount + 1, `lines ${typeof r.body === 'string' ? r.body.split('\n').length : 'n/a'}`);
+check('export: term rows labeled', typeof r.body === 'string' && r.body.includes('TERM: '), '');
 
 // 11. signoff locks voting
 r = await call('../api/signoff.js', { method: 'POST', body: { t: testUser.token } });

@@ -419,3 +419,71 @@ button {
 .poll-err {
   background: var(--no);
 }
+
+/* Document-wide term cards */
+.badge-term {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-weight: 600;
+}
+.term-swap {
+  font-size: 20px;
+  line-height: 1.7;
+  margin: 8px 0;
+}
+.term-swap .term-old {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.term-swap .term-arrow {
+  margin: 0 10px;
+  color: var(--muted);
+}
+.term-swap mark.chg {
+  background: var(--mark);
+  color: var(--mark-text);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+.term-examples {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0;
+}
+.term-example {
+  font-size: 13px;
+  padding: 3px 0;
+}
+.term-example mark.chg {
+  background: var(--mark);
+  color: var(--mark-text);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.term-example-para {
+  color: var(--muted);
+  font-weight: 600;
+  margin-right: 8px;
+  font-size: 12px;
+}
+.term-admin-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0;
+}
+
+/* Term occurrences inside paragraph cards: highlighted but not votable here */
+.paragraph-text mark.chg-covered {
+  background: transparent;
+  outline: 1px dashed var(--accent);
+  outline-offset: 1px;
+  color: inherit;
+}
+.covered-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0 0;
+}

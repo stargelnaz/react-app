@@ -77,16 +77,17 @@ md.push(`| 🤝 Agreed duplicate edits (auto-merged) | ${agreedDuplicates.length
 md.push(`| 🟡 Soft conflicts (same insertion point) | ${softConflicts.length} |`);
 md.push(`| Co-edited paragraphs (no overlap) | ${coEdited.length} |`);
 md.push(`| Orphan deletions (invisible to stakeholders) | ${report.summary.orphan_deletions_total} |`);
+md.push(`| Punctuation-only changes (applied silently, not voted) | ${editorStats.reduce((s, e) => s + e.punct_only_hidden, 0)} |`);
 md.push(`| Comments on unchanged paragraphs (invisible) | ${invisibleComments} (${invisibleCommentParas} paragraphs) |`);
 md.push(``);
 md.push(`## Per-editor breakdown`, ``);
 md.push(
-  `| Editor | Reviewer | Section (¶ range) | Insertions | Replacements | Deletions | Orphans | Likely moves | New ¶ | Merged ¶ marks | Comments | Unaligned ¶ |`
+  `| Editor | Reviewer | Section (¶ range) | Insertions | Replacements | Deletions | Orphans | Punct-only hidden | Likely moves | New ¶ | Merged ¶ marks | Comments | Unaligned ¶ |`
 );
-md.push(`|---|---|---|---|---|---|---|---|---|---|---|---|`);
+md.push(`|---|---|---|---|---|---|---|---|---|---|---|---|---|`);
 for (const s of editorStats) {
   md.push(
-    `| ${s.editor} | ${s.reviewer} | ${s.min_paragraph ?? '—'}–${s.max_paragraph ?? '—'} | ${s.insertions} | ${s.replacements} | ${s.deletions_total} | ${s.orphan_deletions} | ${s.likely_moves} | ${s.new_paragraphs} | ${s.merged_paragraph_marks} | ${s.comments} | ${s.unmatched_paragraphs} |`
+    `| ${s.editor} | ${s.reviewer} | ${s.min_paragraph ?? '—'}–${s.max_paragraph ?? '—'} | ${s.insertions} | ${s.replacements} | ${s.deletions_total} | ${s.orphan_deletions} | ${s.punct_only_hidden} | ${s.likely_moves} | ${s.new_paragraphs} | ${s.merged_paragraph_marks} | ${s.comments} | ${s.unmatched_paragraphs} |`
   );
 }
 md.push(``);
