@@ -1,122 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react';
+import { bootstrapToken, api } from './api.js';
+import VotingView from './components/VotingView.jsx';
+import AdminDashboard from './components/AdminDashboard.jsx';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [state, setState] = useState({ status: 'loading' });
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
+  useEffect(() => {
+    const token = bootstrapToken();
+    if (!token) {
+      setState({ status: 'no-token' });
+      return;
+    }
+    api
+      .paragraphs()
+      .then((data) => setState({ status: 'ready', data }))
+      .catch((e) =>
+        setState({ status: e.status === 401 ? 'bad-token' : 'error', message: e.message })
+      );
+  }, []);
+
+  if (state.status === 'loading') {
+    return <div className="center-screen">Loading 載入中…</div>;
+  }
+  if (state.status === 'no-token' || state.status === 'bad-token') {
+    return (
+      <div className="center-screen">
+        <div className="notice-card">
+          <h1>Document Review Portal 文件審閱系統</h1>
           <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+            {state.status === 'no-token'
+              ? 'This page requires your personal access link. Please open the link you were sent.'
+              : 'This access link is not valid. Please use the exact link you were sent, or contact the administrator.'}
+          </p>
+          <p lang="zh-TW">
+            {state.status === 'no-token'
+              ? '本頁面需要您的個人專屬連結，請使用您收到的連結開啟。'
+              : '此連結無效。請使用您收到的原始連結，或聯絡管理員。'}
           </p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      </div>
+    );
+  }
+  if (state.status === 'error') {
+    return (
+      <div className="center-screen">
+        <div className="notice-card">
+          <h1>Something went wrong</h1>
+          <p>{state.message}</p>
+          <button onClick={() => window.location.reload()}>Retry 重試</button>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </div>
+    );
+  }
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  const { user, paragraphs } = state.data;
+  return user.role === 'admin' ? (
+    <AdminDashboard user={user} paragraphs={paragraphs} />
+  ) : (
+    <VotingView user={user} paragraphs={paragraphs} />
+  );
 }
-
-export default App
