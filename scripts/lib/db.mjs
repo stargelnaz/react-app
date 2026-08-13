@@ -75,6 +75,14 @@ export async function remove(table, filterQuery) {
   await rest(`${table}?${filterQuery}`, { method: 'DELETE' });
 }
 
+export async function patch(table, filterQuery, body) {
+  await rest(`${table}?${filterQuery}`, {
+    method: 'PATCH',
+    body,
+    headers: { Prefer: 'return=minimal' },
+  });
+}
+
 export async function upsert(table, rows, onConflict) {
   await rest(`${table}?on_conflict=${onConflict}`, {
     method: 'POST',
