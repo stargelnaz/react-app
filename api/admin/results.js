@@ -1,9 +1,9 @@
-import { requireUser, select } from '../_lib/db.js';
+import { withHandler, requireUser, select } from '../_lib/db.js';
 
 // Live aggregation for the admin dashboard. Polled — returns votes only (no
 // paragraph HTML; the dashboard fetches /api/paragraphs once for content).
 // Test users are excluded from counts and listings.
-export default async function handler(req, res) {
+async function handler(req, res) {
   const user = await requireUser(req, res, 'admin');
   if (!user) return;
 
@@ -40,3 +40,5 @@ export default async function handler(req, res) {
     by_paragraph: byParagraph,
   });
 }
+
+export default withHandler(handler);

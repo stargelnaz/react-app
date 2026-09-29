@@ -1,8 +1,8 @@
-import { requireUser, rest, select } from '../_lib/db.js';
+import { withHandler, requireUser, rest, select } from '../_lib/db.js';
 
 // Clears a stakeholder's sign-off so they can revise votes (per plan default:
 // submit locks, admin can unlock).
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const user = await requireUser(req, res, 'admin');
   if (!user) return;
@@ -23,3 +23,5 @@ export default async function handler(req, res) {
   });
   res.json({ ok: true, unlocked: rows[0].name });
 }
+
+export default withHandler(handler);

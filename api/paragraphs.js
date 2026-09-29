@@ -1,9 +1,9 @@
-import { requireUser, select } from './_lib/db.js';
+import { withHandler, requireUser, select } from './_lib/db.js';
 
 // Full review payload: paragraphs in display order, anonymized comments, and
 // (for stakeholders) the caller's own votes. Fetched once at load; voting
 // posts individually afterward.
-export default async function handler(req, res) {
+async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
 
@@ -60,3 +60,5 @@ export default async function handler(req, res) {
     })),
   });
 }
+
+export default withHandler(handler);

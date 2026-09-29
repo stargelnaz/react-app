@@ -1,8 +1,8 @@
-import { requireUser, select } from '../_lib/db.js';
+import { withHandler, requireUser, select } from '../_lib/db.js';
 
 // Summary export: one row per paragraph with vote tallies, consensus, and
 // attributed notes. ?format=csv (default) or json. Test users excluded.
-export default async function handler(req, res) {
+async function handler(req, res) {
   const user = await requireUser(req, res, 'admin');
   if (!user) return;
   const format = (req.query?.format || 'csv').toLowerCase();
@@ -80,3 +80,5 @@ export default async function handler(req, res) {
   // BOM so Excel opens the Chinese text as UTF-8
   res.send('﻿' + csv);
 }
+
+export default withHandler(handler);

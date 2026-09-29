@@ -1,11 +1,11 @@
-import { requireUser, select, rest } from './_lib/db.js';
+import { withHandler, requireUser, select, rest } from './_lib/db.js';
 
 const STANDARD_VOTES = new Set(['YES', 'NO']);
 const CONFLICT_VOTES = new Set(['A', 'B', 'REJECT_BOTH']);
 const MAX_NOTES = 10000;
 
 // Auto-save endpoint: upserts the caller's vote/notes for one paragraph.
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const user = await requireUser(req, res, 'stakeholder');
   if (!user) return;
@@ -47,3 +47,5 @@ export default async function handler(req, res) {
 
   res.json({ ok: true });
 }
+
+export default withHandler(handler);

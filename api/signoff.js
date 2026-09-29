@@ -1,7 +1,7 @@
-import { requireUser, rest, select } from './_lib/db.js';
+import { withHandler, requireUser, rest, select } from './_lib/db.js';
 
 // Final submit: locks the stakeholder's votes (admin can unlock).
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const user = await requireUser(req, res, 'stakeholder');
   if (!user) return;
@@ -20,3 +20,5 @@ export default async function handler(req, res) {
   );
   res.json({ ok: true, signed_off_at: now, votes_cast: votes.length });
 }
+
+export default withHandler(handler);
